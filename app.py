@@ -51,11 +51,9 @@ with st.sidebar:
     - Groq API (бесплатно)
     - Streamlit
 
-    **Почему Llama?**
-    Сбер использует open-source модели (ruGPT, SberGPT) для compliance.
     """)
 
-    st.info("**Groq — самый быстрый LLM-инференс в мире!**")
+    st.info("**GROQ**")
 
     if st.button("Очистить диалог", use_container_width=True):
         st.session_state.messages = [
