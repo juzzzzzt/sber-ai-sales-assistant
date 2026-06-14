@@ -114,3 +114,11 @@ MOCK_CLIENT_PORTFOLIO = {
     },
     "risk_profile": "moderate"
 }
+
+MOCK_NEWS = [
+    {"time": "08:30", "source": "Reuters", "headline": "ЦБ РФ сохранил ключевую ставку на уровне 21%", "sentiment": "neutral"},
+    {"time": "09:15", "source": "Bloomberg", "headline": "Нефть Brent выросла на 2.5% на фоне геополитики", "sentiment": "positive"},
+    {"time": "10:00", "source": "Интерфакс", "headline": "Рубль ослаб к доллару на 0.8% после заявления Минфина", "sentiment": "negative"},
+    {"time": "11:20", "source": "FT", "headline": "Fed signals potential rate cut in September, dollar index falls", "sentiment": "positive"},
+    {"time": "12:45", "source": "РБК", "headline": "Сбербанк выпустил новый транш корпоративных облигаций", "sentiment": "positive"},
+]

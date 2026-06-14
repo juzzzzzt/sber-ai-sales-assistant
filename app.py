@@ -1,6 +1,6 @@
 import streamlit as st
 from groq import Groq
-from products_db import SYSTEM_PROMPT, EXAMPLE_QUERIES, MOCK_RATES, MOCK_CLIENT_PORTFOLIO
+from products_db import SYSTEM_PROMPT, EXAMPLE_QUERIES, MOCK_RATES, MOCK_CLIENT_PORTFOLIO, MOCK_NEWS
 import time
 import json
 
@@ -260,3 +260,67 @@ if st.button("🔍 Проанализировать портфель ООО Ро
 
             *Дюрация для акций и cash принимается равной 0*
             """)
+
+# ==========================================
+# УЛУЧШЕНИЕ 3: Morning Briefing & Sentiment
+# ==========================================
+st.markdown("---")
+st.header("AI Morning Briefing (Demo)")
+st.caption("Автоматическая генерация брифинга для sales-трейдера на основе альтернативных данных и новостей")
+
+if st.button("🚀 Сгенерировать утренний брифинг", use_container_width=True, type="primary"):
+
+    # 1. Формируем блок новостей с эмодзи для наглядности
+    sentiment_emojis = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}
+    news_text = "\n".join([
+        f"- [{n['time']}] {n['source']}: {n['headline']} {sentiment_emojis.get(n['sentiment'], '⚪')}"
+        for n in MOCK_NEWS
+    ])
+
+    # 2. Формируем контекст с рыночными данными (чтобы LLM не галлюцинировала!)
+    rates_text = f"Ключевая ставка ЦБ: {MOCK_RATES['key_rate_CB']}%, USD/RUB: {MOCK_RATES['USD_RUB']}, EUR/RUB: {MOCK_RATES['EUR_RUB']}"
+
+    # 3. Создаем мощный промпт для LLM
+    briefing_prompt = f"""Ты — старший аналитик Департамента Глобальных Рынков (ДГР) Сбера. 
+Сгенерируй краткий и структурированный Morning Briefing для sales-трейдеров на основе следующих данных.
+
+[РЫНОЧНЫЕ ДАННЫЕ]
+{rates_text}
+
+[НОВОСТНОЙ ПОТОК]
+{news_text}
+
+ТРЕБОВАНИЯ К ОТВЕТУ (строго в формате Markdown):
+1. **Макро-обзор**: 2-3 предложения о главном драйвере дня.
+2. **Влияние на продукты ДГР**: Как новости влияют на FX (валюту), Fixed Income (облигации) и Derivatives (деривативы).
+3. **3 Идеи для клиентов**: Конкретные предложения, которые sales-трейдер может озвучить клиентам сегодня (например, хеджирование, размещение ликвидности).
+4. **Риски дня**: На что обратить внимание.
+
+Отвечай на русском языке, профессионально, без воды."""
+
+    # 4. Вызываем LLM
+    with st.spinner("AI-агент анализирует новости и рыночные данные..."):
+        try:
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system",
+                     "content": "Ты профессиональный финансовый аналитик Сбера. Отвечай строго по данным из промпта."},
+                    {"role": "user", "content": briefing_prompt}
+                ],
+                temperature=0.4,  # Низкая температура для более фактологического ответа
+                max_tokens=1000,
+            )
+
+            # 5. Красивый вывод результата
+            st.markdown(response.choices[0].message.content)
+
+            # Метрики снизу
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Проанализировано новостей", len(MOCK_NEWS))
+            col2.metric("Позитивный фон",
+                        f"{sum(1 for n in MOCK_NEWS if n['sentiment'] == 'positive')}/{len(MOCK_NEWS)}")
+            col3.metric("Время генерации", f"{(response.usage.completion_tokens / 50):.1f} сек")  # Примерная оценка
+
+        except Exception as e:
+            st.error(f"Ошибка генерации брифинга: {e}")
