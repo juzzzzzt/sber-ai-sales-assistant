@@ -189,3 +189,43 @@ if prompt := st.chat_input("Задайте вопрос о продуктах Д
 
 st.markdown("---")
 st.caption("Pet-project для подготовки к интервью в Сбер КИБ | Чурилов Иван | 2026")
+
+import plotly.express as px
+import plotly.graph_objects as go
+
+# В основном коде, после чата:
+st.markdown("---")
+st.header("Анализ портфеля клиента (demo)")
+
+if st.button("Проанализировать портфель ООО Ромашка"):
+    portfolio = MOCK_CLIENT_PORTFOLIO["portfolio"]
+
+    # Конвертация в рубли
+    portfolio_rub = {
+        "Облигации РФ": portfolio["RUB_bonds"],
+        "Акции РФ": portfolio["equities_RF"],
+        "USD (конверт.)": portfolio["USD_cash"] * MOCK_RATES["USD_RUB"],
+        "EUR (конверт.)": portfolio["EUR_cash"] * MOCK_RATES["EUR_RUB"],
+    }
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        fig = px.pie(
+            values=list(portfolio_rub.values()),
+            names=list(portfolio_rub.keys()),
+            title="Распределение активов (в рублях)"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.metric("Всего активов", f"{sum(portfolio_rub.values()) / 1e6:.1f} млн ₽")
+        st.metric("Валютная экспозиция", "42%", delta="-5%")
+        st.metric("Дюрация портфеля", "4.2 года")
+
+        st.info("""
+        **AI-рекомендации:**
+        - Высокая валютная экспозиция → рассмотрите FX Swap
+        - Концентрация в RUB → диверсифицируйте
+        - Рассмотрите IRS для хеджа процентного риска
+        """)
