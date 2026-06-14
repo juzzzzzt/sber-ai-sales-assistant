@@ -117,7 +117,7 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("---")
-    st.caption("Based on surveys by Dong et al. (2025), Fu (2025), Pippas et al. (2025)")
+    st.caption("Sber CIB")
 
 # Display history
 for msg in st.session_state.messages[1:]:
@@ -130,7 +130,7 @@ if st.session_state.process_example:
 
     if last_message["role"] == "user":
         with st.chat_message("assistant"):
-            with st.spinner("Llama 3.3 анализирует запрос..."):
+            with st.spinner("Sber AI Assistant with Llama 3.3 анализирует запрос..."):
                 start_time = time.time()
 
                 # Извлекаем контекст
@@ -196,7 +196,7 @@ if prompt := st.chat_input("Задайте вопрос о продуктах Д
                     st.write(f"**Время ответа:** {elapsed:.2f} сек")
                     st.write(f"**Модель:** Llama 3.3 70B (Groq)")
                     if context:
-                        st.write(f"**📊 Контекст:** Добавлены рыночные данные")
+                        st.write(f"**Контекст:** Добавлены рыночные данные")
 
                 st.session_state.messages.append({"role": "assistant", "content": assistant_msg})
             else:
@@ -209,9 +209,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 st.markdown("---")
-st.header("📊 Анализ портфеля клиента (demo)")
+st.header("Анализ портфеля клиента")
 
-if st.button("🔍 Проанализировать портфель ООО Ромашка"):
+if st.button("Проанализировать портфель ООО Ромашка"):
     portfolio = MOCK_CLIENT_PORTFOLIO["portfolio"]
 
     # Конвертация в рубли
@@ -251,12 +251,12 @@ if st.button("🔍 Проанализировать портфель ООО Ро
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.metric("💰 Всего активов", f"{total_value / 1e6:.1f} млн ₽")
-        st.metric("💱 Валютная экспозиция", f"{fx_exposure_pct:.1f}%")
-        st.metric("⏱ Дюрация портфеля", f"{portfolio_duration:.2f} лет")
+        st.metric("Всего активов", f"{total_value / 1e6:.1f} млн ₽")
+        st.metric("Валютная экспозиция", f"{fx_exposure_pct:.1f}%")
+        st.metric("Дюрация портфеля", f"{portfolio_duration:.2f} лет")
 
         # Формулы для прозрачности
-        with st.expander("📐 Методология расчёта"):
+        with st.expander("Методология расчёта"):
             st.markdown(f"""
             **Валютная экспозиция:**
             ```
@@ -280,10 +280,10 @@ if st.button("🔍 Проанализировать портфель ООО Ро
 # УЛУЧШЕНИЕ 3: Morning Briefing & Sentiment
 # ==========================================
 st.markdown("---")
-st.header("AI Morning Briefing (Demo)")
+st.header("AI Morning Briefing")
 st.caption("Автоматическая генерация брифинга для sales-трейдера на основе альтернативных данных и новостей")
 
-if st.button("🚀 Сгенерировать утренний брифинг", use_container_width=True, type="primary"):
+if st.button("Сгенерировать утренний брифинг", use_container_width=True, type="primary"):
 
     # 1. Формируем блок новостей с эмодзи для наглядности
     sentiment_emojis = {"positive": "🟢", "negative": "🔴", "neutral": "🟡"}
