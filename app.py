@@ -35,16 +35,31 @@ if "process_example" not in st.session_state:
 
 
 def get_contextual_data(user_message: str) -> str:
-    """Извлекает данные на основе ключевых слов в сообщении"""
+    """Извлекает данные на основе ключевых слов"""
     message_lower = user_message.lower()
 
-    # Проверяем, нужны ли курсы валют
-    if any(word in message_lower for word in ['курс', 'доллар', 'евро', 'валюта', 'котировк', 'rate', 'usd', 'eur']):
-        return f"\n\n[КОНТЕКСТ: Текущие рыночные данные]\n{json.dumps(MOCK_RATES, ensure_ascii=False, indent=2)}"
+    # Портфель клиента
+    if any(word in message_lower for word in
+           ['портфель', 'активы', 'позиции', 'portfolio', 'состав', 'holding', 'ромашка', 'corp']):
+        context = f"\n\n[КОНТЕКСТ: Портфель клиента ООО Ромашка (CORP_001)]\n"
+        context += f"Клиент: ООО Ромашка\n"
+        context += f"ID: CORP_001\n"
+        context += f"Профиль риска: {MOCK_CLIENT_PORTFOLIO['risk_profile']}\n"
+        context += f"Активы:\n"
+        for asset, data in MOCK_CLIENT_PORTFOLIO['portfolio'].items():
+            amount = data['amount'] if isinstance(data, dict) else data
+            duration = data.get('duration', 0) if isinstance(data, dict) else 0
+            context += f"  - {asset}: {amount:,} руб (дюрация: {duration} лет)\n"
+        return context
 
-    # Проверяем, нужен ли портфель
-    if any(word in message_lower for word in ['портфель', 'активы', 'позиции', 'portfolio', 'holding']):
-        return f"\n\n[КОНТЕКСТ: Портфель клиента]\n{json.dumps(MOCK_CLIENT_PORTFOLIO, ensure_ascii=False, indent=2)}"
+    # Рыночные данные
+    if any(word in message_lower for word in
+           ['курс', 'доллар', 'евро', 'валюта', 'котировк', 'ставка', 'цб', 'rate', 'usd', 'eur', 'ключ']):
+        context = f"\n\n[КОНТЕКСТ: Текущие рыночные данные на {MOCK_RATES.get('timestamp', 'сегодня')}]\n"
+        for key, value in MOCK_RATES.items():
+            if key != 'timestamp':
+                context += f"  - {key}: {value}\n"
+        return context
 
     return ""
 
@@ -121,7 +136,7 @@ if st.session_state.process_example:
                 # Извлекаем контекст
                 context = get_contextual_data(last_message["content"])
                 if context:
-                    st.info("📊 **Используются рыночные данные**")
+                    st.info(" **Используются рыночные данные**")
 
                 response = call_llm(st.session_state.messages, context)
 
@@ -140,7 +155,7 @@ if st.session_state.process_example:
                         st.write(f"**Время ответа:** {elapsed:.2f} сек")
                         st.write(f"**Модель:** Llama 3.3 70B (Groq)")
                         if context:
-                            st.write(f"**📊 Контекст:** Добавлены рыночные данные")
+                            st.write(f"**Контекст:** Добавлены рыночные данные")
 
                     st.session_state.messages.append({"role": "assistant", "content": assistant_msg})
                 else:
@@ -156,13 +171,13 @@ if prompt := st.chat_input("Задайте вопрос о продуктах Д
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Llama 3.3 анализирует запрос..."):
+        with st.spinner("Sber AI Assistant with Llama 3.3 анализирует запрос..."):
             start_time = time.time()
 
             # Извлекаем контекст
             context = get_contextual_data(prompt)
             if context:
-                st.info("📊 **Используются рыночные данные**")
+                st.info("**Используются рыночные данные**")
 
             response = call_llm(st.session_state.messages, context)
 
