@@ -50,18 +50,18 @@ SYSTEM_PROMPT = f"""Ты — AI-ассистент отдела электрон
 1. Помогать корпоративным клиентам и sales-трейдерам разбираться в продуктах ДГР
 2. Объяснять терминологию финансовых рынков простым языком
 3. Предлагать подходящие продукты под задачи клиента
-4. Помогать с анализом рыночных ситуаций
+4. Использовать инструменты для получения реальных данных (курсы валют, портфели клиентов)
 
-Ты общаешься профессионально, но доступно. Если не знаешь точный ответ — честно говори об этом.
-Используй следующую базу знаний о продуктах:
+Ты общаешься профессионально, но доступно.
 
 {DGR_PRODUCTS}
 
 ВАЖНО:
-- Не придумывай конкретных котировок или цен (это делается реальными системами)
-- Если спрашивают про конкретную сделку — объясняй механику продукта
-- Предлагай клиенту связаться с sales-трейдером для заключения реальной сделки
-- Будь лаконичен, но давай достаточно информации для принятия решений
+- Если в сообщении есть [КОНТЕКСТ: ...] — ОБЯЗАТЕЛЬНО используй эти данные для ответа
+- Никогда не придумывай котировки или ставки — используй только данные из контекста
+- Если данных нет в контексте — честно скажи, что у тебя нет актуальной информации
+- Предлагай клиенту связаться с sales-трейдером для получения точных котировок
+- Будь лаконичен и конкретен
 """
 
 # Примеры типичных вопросов клиентов (для UI)
@@ -75,98 +75,42 @@ EXAMPLE_QUERIES = [
     "Какие продукты подойдут для компании-экспортера?",
 ]
 
-# Добавь в products_db.py
-import json
-from datetime import datetime
-
-# Mock-данные (в production это были бы API вызовы)
-MOCK_CLIENT_PORTFOLIO = {
-    "client_id": "CORP_001",
-    "client_name": "ООО Ромашка",
-    "portfolio": {
-        "RUB_bonds": 50_000_000,  # 50 млн руб
-        "USD_cash": 500_000,       # 500 тыс USD
-        "EUR_cash": 200_000,       # 200 тыс EUR
-        "equities_RF": 20_000_000  # 20 млн руб в акциях РФ
-    },
-    "risk_profile": "moderate",
-    "last_deals": [
-        {"product": "FX Spot USD/RUB", "date": "2026-06-10", "amount": 100_000},
-        {"product": "ОФЗ 26230", "date": "2026-05-15", "amount": 10_000_000}
-    ]
-}
-
+# Mock-данные для демонстрации
 MOCK_RATES = {
     "USD_RUB": 89.50,
     "EUR_RUB": 97.20,
     "CNY_RUB": 12.35,
+    "GBP_RUB": 113.40,
     "key_rate_CB": 21.0,
     "OFZ_26230_yield": 16.8,
-    "OFZ_26235_yield": 17.2
+    "OFZ_26235_yield": 17.2,
+    "timestamp": "2026-06-14 12:00 MSK"
 }
 
-# Функции, которые LLM может вызывать
-def get_client_portfolio(client_id: str = "CORP_001") -> str:
-    """Получить портфель клиента"""
-    return json.dumps(MOCK_CLIENT_PORTFOLIO, ensure_ascii=False, indent=2)
-
-def get_market_rates() -> str:
-    """Получить текущие рыночные котировки"""
-    return json.dumps(MOCK_RATES, ensure_ascii=False, indent=2)
-
-def suggest_hedge(product: str, amount: float, currency: str) -> str:
-    """Предложить продукт для хеджирования"""
-    suggestions = {
-        "FX_risk": f"Для хеджа {amount} {currency} рекомендую FX Forward на 3 месяца или FX Swap",
-        "rate_risk": f"Для хеджа процентного риска рассмотрите IRS (Interest Rate Swap)",
-    }
-    return suggestions.get(product, "Рекомендую связаться с sales-трейдером для персонального предложения")
-
-# Маппинг функций для Groq
-TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_client_portfolio",
-            "description": "Получить текущий портфель клиента ДГР. Используйте, когда клиент спрашивает про свой портфель, активы, позиции.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "client_id": {"type": "string", "description": "ID клиента, по умолчанию CORP_001"}
-                },
-                "required": ["client_id"]
-            }
+MOCK_CLIENT_PORTFOLIO = {
+    "client_id": "CORP_001",
+    "client_name": "ООО Ромашка",
+    "portfolio": {
+        "RUB_bonds": {
+            "amount": 50000000,
+            "duration": 4.5,
+            "asset_class": "fixed_income"
+        },
+        "USD_cash": {
+            "amount": 500000,
+            "duration": 0,
+            "asset_class": "cash_fx"
+        },
+        "EUR_cash": {
+            "amount": 200000,
+            "duration": 0,
+            "asset_class": "cash_fx"
+        },
+        "equities_RF": {
+            "amount": 20000000,
+            "duration": 0,
+            "asset_class": "equity"
         }
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_market_rates",
-            "description": "Получить текущие рыночные котировки: курсы валют, ключевая ставка ЦБ, доходности ОФЗ.",
-            "parameters": {"type": "object", "properties": {}, "required": []}
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "suggest_hedge",
-            "description": "Предложить продукт для хеджирования рисков клиента.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "product": {"type": "string", "description": "Тип риска: FX_risk, rate_risk"},
-                    "amount": {"type": "number", "description": "Сумма"},
-                    "currency": {"type": "string", "description": "Валюта"}
-                },
-                "required": ["product", "amount", "currency"]
-            }
-        }
-    }
-]
-
-# Обработчик вызовов функций
-FUNCTION_MAP = {
-    "get_client_portfolio": get_client_portfolio,
-    "get_market_rates": get_market_rates,
-    "suggest_hedge": suggest_hedge,
+    "risk_profile": "moderate"
 }
